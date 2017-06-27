@@ -15,7 +15,10 @@
 #include <CurieBLE.h>
 #include "DHT.h"
 
+#include <Wire.h>
+#include "rgb_lcd.h"
 
+rgb_lcd lcd;
 DHT dht;
 
 
@@ -25,6 +28,7 @@ BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Servic
 // BLE LED Switch Characteristic - custom 128-bit UUID, read and writable by central
 BLEUnsignedCharCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LED
 BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //TempSens
+BLEUnsignedCharCharacteristic LCDCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LCD Display
 
 const int ledPin = 8; // pin to use for the LED
 
@@ -38,6 +42,7 @@ void setup() {
 
   // begin initialization
   BLE.begin();
+  lcd.begin(16,2);
 
   // set advertised local name and service UUID:
   BLE.setLocalName("LED");
@@ -46,6 +51,7 @@ void setup() {
   // add the characteristic to the service
   ledService.addCharacteristic(switchCharacteristic);
   ledService.addCharacteristic(tempCharacteristic);
+  ledService.addCharacteristic(LCDCharacteristic);
 
   // add service
   BLE.addService(ledService);
@@ -53,11 +59,11 @@ void setup() {
   // set the initial value for the characeristic:
   switchCharacteristic.setValue(0);
   tempCharacteristic.setValue(0);
+  LCDCharacteristic.setValue(0);
 
   // start advertising
   BLE.advertise();
 
-  Serial.println("BLE LED Peripheral");
 }
 
 void loop() {
@@ -69,11 +75,9 @@ void loop() {
   float humidity = dht.getHumidity();
   float temperature = dht.getTemperature();
 
-  Serial.print(temperature);
-
 
   if(dht.getStatusString()){
-    tempCharacteristic.setValue(100);
+    tempCharacteristic.setValue(temperature);
   }
 
   // if a central is connected to peripheral:
@@ -94,6 +98,12 @@ void loop() {
           Serial.println(F("LED off"));
           digitalWrite(ledPin, LOW);          // will turn the LED off
         }
+      }
+      
+      
+      if (LCDCharacteristic.written()){
+        lcd.clear();
+        lcd.print(LCDCharacteristic.value());
       }
     }
 
