@@ -28,7 +28,6 @@ BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Servic
 // BLE LED Switch Characteristic - custom 128-bit UUID, read and writable by central
 BLEUnsignedCharCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LED
 BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //TempSens
-BLEUnsignedCharCharacteristic tempDecimalCharacteristic("19B10012-E8F2-537E-4F6C-D104768A1214", BLERead); //TempSensDecimal
 BLEUnsignedCharCharacteristic LCDCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LCD Display
 
 const int ledPin = 8; // pin to use for the LED
@@ -52,7 +51,6 @@ void setup() {
   // add the characteristic to the service
   ledService.addCharacteristic(switchCharacteristic);
   ledService.addCharacteristic(tempCharacteristic);
-  ledService.addCharacteristic(tempDecimalCharacteristic);
   ledService.addCharacteristic(LCDCharacteristic);
 
   // add service
@@ -61,7 +59,6 @@ void setup() {
   // set the initial value for the characeristic:
   switchCharacteristic.setValue(0);
   tempCharacteristic.setValue(0);
-  tempDecimalCharacteristic.setValue(0);
   LCDCharacteristic.setValue(0);
 
   // start advertising
@@ -75,13 +72,14 @@ void loop() {
 
   delay(dht.getMinimumSamplingPeriod());
 
+
   float temperature = dht.getTemperature();
   int temp = (int) dht.getTemperature();
-  
+
+  Serial.print(temperature);  
 
   if(dht.getStatusString()){
     tempCharacteristic.setValue(temperature); 
-    tempDecimalCharacteristic.setValue(temperature - (temp * 100); //decimal value of temperature
   }
 
   // if a central is connected to peripheral:
