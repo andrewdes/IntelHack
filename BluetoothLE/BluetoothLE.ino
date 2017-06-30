@@ -18,6 +18,9 @@
 #include <Wire.h>
 #include "rgb_lcd.h"
 
+#include <CurieTime.h>
+
+
 rgb_lcd lcd;
 DHT dht;
 
@@ -67,13 +70,15 @@ void setup() {
   // start advertising
   BLE.advertise();
 
+  
+  //set time to 1:35:24 on April 4th, 2016. Please change to your time / date
+  setTime(1, 35, 24, 4, 10, 2016);
+
 }
 
 void loop() {
   // listen for BLE peripherals to connect:
   BLEDevice central = BLE.central();
-
-  delay(dht.getMinimumSamplingPeriod());
 
   float temperature = dht.getTemperature();
 
@@ -103,17 +108,54 @@ void loop() {
       
       
       if (hourCharacteristic.written() || minuteCharacteristic.written()){
-        lcd.clear();
-        print2digits(hourCharacteristic.value());
-        lcd.print(":");
-        print2digits(minuteCharacteristic.value());
+        setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, 4, 10, 2016);
       }
+
+      //create a character array of 16 characters for the time
+      char clockTime[16];
+      //use sprintf to create a time string of the hour, minte and seconds
+      sprintf(clockTime, "    %2d:%2d:%2d    ", hour(), minute(), second());
+      
+      //create a character array of 15 characters for the date
+      char dateTime[16];
+      //use sprintf to create a date string from month, day and year
+      sprintf(dateTime, "   %2d/%2d/%4d   ", month(), day(), year());
+      
+      //set cursor to column 0, row 0
+      lcd.setCursor(0, 0);
+      //print the date string over lcd
+      lcd.print(dateTime);
+      //set cursor to column 0, row 1
+      lcd.setCursor(0, 1);
+      //print the time string over lcd
+      lcd.print(clockTime);
+      
     }
 
     // when the central disconnects, print it out:
     Serial.print(F("Disconnected from central: "));
     Serial.println(central.address());
   }
+
+   //create a character array of 16 characters for the time
+  char clockTime[16];
+  //use sprintf to create a time string of the hour, minte and seconds
+  sprintf(clockTime, "    %2d:%2d:%2d    ", hour(), minute(), second());
+  
+  //create a character array of 15 characters for the date
+  char dateTime[16];
+  //use sprintf to create a date string from month, day and year
+  sprintf(dateTime, "   %2d/%2d/%4d   ", month(), day(), year());
+  
+  //set cursor to column 0, row 0
+  lcd.setCursor(0, 0);
+  //print the date string over lcd
+  lcd.print(dateTime);
+  //set cursor to column 0, row 1
+  lcd.setCursor(0, 1);
+  //print the time string over lcd
+  lcd.print(clockTime);
+
 }
 
 void print2digits(int number){
@@ -123,6 +165,9 @@ void print2digits(int number){
 
   lcd.print(number);
 }
+
+
+
 /*
    Copyright (c) 2016 Intel Corporation.  All rights reserved.
 
