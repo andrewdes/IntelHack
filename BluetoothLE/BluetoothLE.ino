@@ -28,7 +28,8 @@ BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Servic
 // BLE LED Switch Characteristic - custom 128-bit UUID, read and writable by central
 BLEUnsignedCharCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LED
 BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //TempSens
-BLEUnsignedCharCharacteristic LCDCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LCD Display
+BLEUnsignedCharCharacteristic hourCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Hour
+BLEUnsignedCharCharacteristic minuteCharacteristic("19B10013-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Minute
 
 const int ledPin = 8; // pin to use for the LED
 
@@ -51,7 +52,8 @@ void setup() {
   // add the characteristic to the service
   ledService.addCharacteristic(switchCharacteristic);
   ledService.addCharacteristic(tempCharacteristic);
-  ledService.addCharacteristic(LCDCharacteristic);
+  ledService.addCharacteristic(hourCharacteristic);
+  ledService.addCharacteristic(minuteCharacteristic);
 
   // add service
   BLE.addService(ledService);
@@ -59,7 +61,8 @@ void setup() {
   // set the initial value for the characeristic:
   switchCharacteristic.setValue(0);
   tempCharacteristic.setValue(0);
-  LCDCharacteristic.setValue(0);
+  hourCharacteristic.setValue(0);
+  minuteCharacteristic.setValue(0);
 
   // start advertising
   BLE.advertise();
@@ -72,11 +75,7 @@ void loop() {
 
   delay(dht.getMinimumSamplingPeriod());
 
-
   float temperature = dht.getTemperature();
-  int temp = (int) dht.getTemperature();
-
-  Serial.print(temperature);  
 
   if(dht.getStatusString()){
     tempCharacteristic.setValue(temperature); 
@@ -103,9 +102,11 @@ void loop() {
       }
       
       
-      if (LCDCharacteristic.written()){
+      if (hourCharacteristic.written() || minuteCharacteristic.written()){
         lcd.clear();
-        lcd.print(LCDCharacteristic.value());
+        print2digits(hourCharacteristic.value());
+        lcd.print(":");
+        print2digits(minuteCharacteristic.value());
       }
     }
 
@@ -115,6 +116,13 @@ void loop() {
   }
 }
 
+void print2digits(int number){
+  if (number >= 0 && number < 10){
+    lcd.print('0');
+  }
+
+  lcd.print(number);
+}
 /*
    Copyright (c) 2016 Intel Corporation.  All rights reserved.
 
