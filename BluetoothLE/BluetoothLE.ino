@@ -129,13 +129,13 @@ void loop() {
       //create a character array of 16 characters for the time
       char clockTime[16];
       //use sprintf to create a time string of the hour, minte and seconds
-      sprintf(clockTime, "    %2d:%2d:%2d    ", hour(), minute(), second());
+      sprintf(clockTime, "    %2d:%02d:%02d    ", hour(), minute(), second());
 
       
       //create a character array of 15 characters for the date
       char dateTime[16];
       //use sprintf to create a date string from month, day and year
-      sprintf(dateTime, "   %2d/%2d/%4d   ", month(), day(), year());
+      sprintf(dateTime, "   %02d/%02d/%4d   ", month(), day(), year());
       
       //set cursor to column 0, row 0
       lcd.setCursor(0, 0);
@@ -156,14 +156,14 @@ void loop() {
    //create a character array of 16 characters for the time
   char clockTime[16];
   //use sprintf to create a time string of the hour, minte and seconds
-  sprintf(clockTime, "    %2d:%2d:%2d    ", hour(), minute(), second());
+  sprintf(clockTime, "    %2d:%02d:%02d    ", hour(), minute(), second());
 
 
 
   //create a character array of 15 characters for the date
   char dateTime[16];
   //use sprintf to create a date string from month, day and year
-  sprintf(dateTime, "   %2d/%2d/%4d   ", month(), day(), year());
+  sprintf(dateTime, "   %02d/%02d/%4d   ", month(), day(), year());
   
   //set cursor to column 0, row 0
   lcd.setCursor(0, 0);
