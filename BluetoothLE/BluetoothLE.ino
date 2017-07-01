@@ -33,6 +33,9 @@ BLEUnsignedCharCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104
 BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //TempSens
 BLEUnsignedCharCharacteristic hourCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Hour
 BLEUnsignedCharCharacteristic minuteCharacteristic("19B10013-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Minute
+BLEUnsignedCharCharacteristic dayCharacteristic("19B10004-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Day
+BLEUnsignedCharCharacteristic monthCharacteristic("19B10014-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Month
+BLEUnsignedCharCharacteristic yearCharacteristic("19B10024-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
 
 const int ledPin = 8; // pin to use for the LED
 
@@ -57,6 +60,9 @@ void setup() {
   ledService.addCharacteristic(tempCharacteristic);
   ledService.addCharacteristic(hourCharacteristic);
   ledService.addCharacteristic(minuteCharacteristic);
+  ledService.addCharacteristic(dayCharacteristic);
+  ledService.addCharacteristic(monthCharacteristic);
+  ledService.addCharacteristic(yearCharacteristic);
 
   // add service
   BLE.addService(ledService);
@@ -66,6 +72,9 @@ void setup() {
   tempCharacteristic.setValue(0);
   hourCharacteristic.setValue(0);
   minuteCharacteristic.setValue(0);
+  dayCharacteristic.setValue(0);
+  monthCharacteristic.setValue(0);
+  yearCharacteristic.setValue(0);
 
   // start advertising
   BLE.advertise();
@@ -106,15 +115,22 @@ void loop() {
         }
       }
       
-      
-      if (hourCharacteristic.written() || minuteCharacteristic.written()){
-        setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, 4, 10, 2016);
+
+      //minute characteristic is the last to be written to from app
+      if (minuteCharacteristic.written()){
+        setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, day(), month(), year());
+      }
+
+      //Year is the last characteristic to be written to from the app
+      if (yearCharacteristic.written()){
+        setTime(hour(), minute(), second(), dayCharacteristic.value(), monthCharacteristic.value(), yearCharacteristic.value()+2000);
       }
 
       //create a character array of 16 characters for the time
       char clockTime[16];
       //use sprintf to create a time string of the hour, minte and seconds
       sprintf(clockTime, "    %2d:%2d:%2d    ", hour(), minute(), second());
+
       
       //create a character array of 15 characters for the date
       char dateTime[16];
@@ -124,11 +140,11 @@ void loop() {
       //set cursor to column 0, row 0
       lcd.setCursor(0, 0);
       //print the date string over lcd
-      lcd.print(dateTime);
+      lcd.print(clockTime);
       //set cursor to column 0, row 1
       lcd.setCursor(0, 1);
       //print the time string over lcd
-      lcd.print(clockTime);
+      lcd.print(dateTime);
       
     }
 
@@ -141,7 +157,9 @@ void loop() {
   char clockTime[16];
   //use sprintf to create a time string of the hour, minte and seconds
   sprintf(clockTime, "    %2d:%2d:%2d    ", hour(), minute(), second());
-  
+
+
+
   //create a character array of 15 characters for the date
   char dateTime[16];
   //use sprintf to create a date string from month, day and year
@@ -150,22 +168,14 @@ void loop() {
   //set cursor to column 0, row 0
   lcd.setCursor(0, 0);
   //print the date string over lcd
-  lcd.print(dateTime);
+  lcd.print(clockTime);
   //set cursor to column 0, row 1
   lcd.setCursor(0, 1);
   //print the time string over lcd
-  lcd.print(clockTime);
+  lcd.print(dateTime);
+
 
 }
-
-void print2digits(int number){
-  if (number >= 0 && number < 10){
-    lcd.print('0');
-  }
-
-  lcd.print(number);
-}
-
 
 
 /*
