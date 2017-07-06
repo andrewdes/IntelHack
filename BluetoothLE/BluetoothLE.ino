@@ -36,6 +36,9 @@ BLEUnsignedCharCharacteristic minuteCharacteristic("19B10013-E8F2-537E-4F6C-D104
 BLEUnsignedCharCharacteristic dayCharacteristic("19B10004-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Day
 BLEUnsignedCharCharacteristic monthCharacteristic("19B10014-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Month
 BLEUnsignedCharCharacteristic yearCharacteristic("19B10024-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
+BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
+
+
 
 const int ledPin = 8; // pin to use for the LED
 
@@ -52,7 +55,7 @@ void setup() {
   lcd.begin(16,2);
 
   // set advertised local name and service UUID:
-  BLE.setLocalName("LED");
+  BLE.setLocalName("Alarm Clock");
   BLE.setAdvertisedService(ledService);
 
   // add the characteristic to the service
@@ -63,6 +66,8 @@ void setup() {
   ledService.addCharacteristic(dayCharacteristic);
   ledService.addCharacteristic(monthCharacteristic);
   ledService.addCharacteristic(yearCharacteristic);
+  ledService.addCharacteristic(event);
+  
 
   // add service
   BLE.addService(ledService);
@@ -75,6 +80,7 @@ void setup() {
   dayCharacteristic.setValue(0);
   monthCharacteristic.setValue(0);
   yearCharacteristic.setValue(0);
+  event.setValue(0);
 
   // start advertising
   BLE.advertise();
@@ -114,16 +120,30 @@ void loop() {
           digitalWrite(ledPin, LOW);          // will turn the LED off
         }
       }
-      
+
 
       //minute characteristic is the last to be written to from app
-      if (minuteCharacteristic.written()){
+      if (minuteCharacteristic.written() && !event.value()){
         setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, day(), month(), year());
       }
 
       //Year is the last characteristic to be written to from the app
       if (yearCharacteristic.written()){
-        setTime(hour(), minute(), second(), dayCharacteristic.value(), monthCharacteristic.value(), yearCharacteristic.value()+2000);
+
+        if(event.value()){
+          Serial.print (hourCharacteristic.value());
+          Serial.print(" : ");
+          Serial.print (minuteCharacteristic.value());
+          Serial.print(" : ");
+          Serial.print (yearCharacteristic.value() + 2000);
+          Serial.print(" / ");
+          Serial.print (monthCharacteristic.value());
+          Serial.print(" / ");      
+          Serial.print (dayCharacteristic.value());
+        }else{
+          setTime(hour(), minute(), second(), dayCharacteristic.value(), monthCharacteristic.value(), yearCharacteristic.value()+2000);
+        }
+        
       }
 
       //create a character array of 16 characters for the time
@@ -145,6 +165,9 @@ void loop() {
       lcd.setCursor(0, 1);
       //print the time string over lcd
       lcd.print(dateTime);
+
+      checkAlarm(hour(), minute(), second());
+
       
     }
 
@@ -157,8 +180,6 @@ void loop() {
   char clockTime[16];
   //use sprintf to create a time string of the hour, minte and seconds
   sprintf(clockTime, "    %2d:%02d:%02d    ", hour(), minute(), second());
-
-
 
   //create a character array of 15 characters for the date
   char dateTime[16];
@@ -174,7 +195,16 @@ void loop() {
   //print the time string over lcd
   lcd.print(dateTime);
 
+  checkAlarm(hour(), minute(), second());
 
+}
+
+void checkAlarm(int h, int m, int s){
+
+  if(h == 12 && m == 0 && s == 0){
+    digitalWrite(ledPin, HIGH);
+  }
+  
 }
 
 
