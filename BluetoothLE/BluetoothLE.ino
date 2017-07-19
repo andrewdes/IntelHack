@@ -20,11 +20,18 @@
 
 #include <CurieTime.h>
 
+#define LEAP_YEAR(Y)     ( (Y>0) && !(Y%4) && ( (Y%100) || !(Y%400) ))     // from time-lib
+
+
 
 rgb_lcd lcd;
 DHT dht;
 
-
+int eventHour;
+int eventMinute;
+int eventDay;
+int eventMonth;
+int eventYear;
 
 BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Service
 
@@ -36,7 +43,7 @@ BLEUnsignedCharCharacteristic minuteCharacteristic("19B10013-E8F2-537E-4F6C-D104
 BLEUnsignedCharCharacteristic dayCharacteristic("19B10004-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Day
 BLEUnsignedCharCharacteristic monthCharacteristic("19B10014-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Month
 BLEUnsignedCharCharacteristic yearCharacteristic("19B10024-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
-BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
+BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); 
 
 
 
@@ -86,8 +93,8 @@ void setup() {
   BLE.advertise();
 
   
-  //set time to 1:35:24 on April 4th, 2016. Please change to your time / date
-  setTime(1, 35, 24, 4, 10, 2016);
+  //set time to 5:00:00 on March 18th, 2017. Please change to your time / date
+  setTime(5, 0, 0, 18, 3, 2017);
 
 }
 
@@ -115,6 +122,22 @@ void loop() {
         if (switchCharacteristic.value()) {   // any value other than 0
           Serial.println("LED on");
           digitalWrite(ledPin, HIGH);         // will turn the LED on
+          Serial.println(dayOfWeek(2017,7,15));
+          Serial.println(dayOfWeek(2017,7,16));
+          Serial.println(dayOfWeek(2017,7,17));
+          Serial.println(dayOfWeek(2017,7,18));
+          Serial.println(dayOfWeek(2017,7,19));
+          Serial.println(dayOfWeek(2017,7,20));
+          Serial.println(dayOfWeek(2017,7,21));
+          Serial.println(dayOfWeek(2017,7,22));
+          Serial.println(dayOfWeek(2017,7,23));
+          Serial.println(dayOfWeek(2017,7,24));
+          Serial.println(dayOfWeek(2017,7,25));
+          Serial.println(dayOfWeek(2017,7,26));
+          Serial.println(dayOfWeek(2017,7,27));
+          Serial.println(dayOfWeek(2017,7,28));
+          Serial.println(dayOfWeek(2017,7,29));
+
         } else {                              // a 0 value
           Serial.println(F("LED off"));
           digitalWrite(ledPin, LOW);          // will turn the LED off
@@ -131,20 +154,17 @@ void loop() {
       if (yearCharacteristic.written()){
 
         if(event.value()){
-          Serial.print (hourCharacteristic.value());
-          Serial.print(" : ");
-          Serial.print (minuteCharacteristic.value());
-          Serial.print(" : ");
-          Serial.print (yearCharacteristic.value() + 2000);
-          Serial.print(" / ");
-          Serial.print (monthCharacteristic.value());
-          Serial.print(" / ");      
-          Serial.print (dayCharacteristic.value());
+          eventHour = hourCharacteristic.value();
+          eventMinute = minuteCharacteristic.value();
+          eventDay = dayCharacteristic.value();
+          eventMonth = monthCharacteristic.value();
+          eventYear = yearCharacteristic.value() + 2000;          
         }else{
           setTime(hour(), minute(), second(), dayCharacteristic.value(), monthCharacteristic.value(), yearCharacteristic.value()+2000);
         }
         
       }
+
 
       //create a character array of 16 characters for the time
       char clockTime[16];
@@ -166,7 +186,7 @@ void loop() {
       //print the time string over lcd
       lcd.print(dateTime);
 
-      checkAlarm(hour(), minute(), second());
+      checkEvent(hour(), minute(), day(), month(), year());
 
       
     }
@@ -195,13 +215,30 @@ void loop() {
   //print the time string over lcd
   lcd.print(dateTime);
 
-  checkAlarm(hour(), minute(), second());
+  checkEvent(hour(), minute(), day(), month(), year());
 
 }
 
-void checkAlarm(int h, int m, int s){
+//Returns the day of the week based on the current day, month and year
+int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
+{
+  uint16_t months[] = {
+    0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365         };   // days until 1st of month
 
-  if(h == 12 && m == 0 && s == 0){
+  uint32_t days = year * 365;        // days until year 
+  for (uint16_t i = 4; i < year; i += 4) if (LEAP_YEAR(i) ) days++;     // adjust leap years, test only multiple of 4 of course
+
+  days += months[month-1] + day;    // add the days of this year
+  if ((month > 2) && LEAP_YEAR(year)) days++;  // adjust 1 if this year is a leap year, but only after febr
+
+  return days % 7;   // remove all multiples of 7
+}
+
+
+
+void checkEvent(int h, int m, int d, int mo, int y){
+
+  if(h == eventHour && m == eventMinute && d == eventDay && mo == eventMonth && y == eventYear){
     digitalWrite(ledPin, HIGH);
   }
   
