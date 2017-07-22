@@ -122,21 +122,6 @@ void loop() {
         if (switchCharacteristic.value()) {   // any value other than 0
           Serial.println("LED on");
           digitalWrite(ledPin, HIGH);         // will turn the LED on
-          Serial.println(dayOfWeek(2017,7,15));
-          Serial.println(dayOfWeek(2017,7,16));
-          Serial.println(dayOfWeek(2017,7,17));
-          Serial.println(dayOfWeek(2017,7,18));
-          Serial.println(dayOfWeek(2017,7,19));
-          Serial.println(dayOfWeek(2017,7,20));
-          Serial.println(dayOfWeek(2017,7,21));
-          Serial.println(dayOfWeek(2017,7,22));
-          Serial.println(dayOfWeek(2017,7,23));
-          Serial.println(dayOfWeek(2017,7,24));
-          Serial.println(dayOfWeek(2017,7,25));
-          Serial.println(dayOfWeek(2017,7,26));
-          Serial.println(dayOfWeek(2017,7,27));
-          Serial.println(dayOfWeek(2017,7,28));
-          Serial.println(dayOfWeek(2017,7,29));
 
         } else {                              // a 0 value
           Serial.println(F("LED off"));
@@ -146,24 +131,27 @@ void loop() {
 
 
       //minute characteristic is the last to be written to from app
-      if (minuteCharacteristic.written() && !event.value()){
-        setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, day(), month(), year());
+      if (minuteCharacteristic.written()){
+
+        if(!event.value()){
+          setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, day(), month(), year());
+        }else{
+          eventHour = hourCharacteristic.value();
+          eventMinute = minuteCharacteristic.value();
+          eventDay = event.value()-2;
+          Serial.println(eventDay);
+          Serial.println(eventHour);
+          Serial.println(eventMinute);
+          Serial.println(dayOfWeek(year(), month(), day()));
+        }
       }
 
       //Year is the last characteristic to be written to from the app
       if (yearCharacteristic.written()){
-
-        if(event.value()){
-          eventHour = hourCharacteristic.value();
-          eventMinute = minuteCharacteristic.value();
-          eventDay = dayCharacteristic.value();
-          eventMonth = monthCharacteristic.value();
-          eventYear = yearCharacteristic.value() + 2000;          
-        }else{
-          setTime(hour(), minute(), second(), dayCharacteristic.value(), monthCharacteristic.value(), yearCharacteristic.value()+2000);
-        }
-        
+          setTime(hour(), minute(), second(), dayCharacteristic.value(), monthCharacteristic.value(), yearCharacteristic.value()+2000);      
       }
+
+      
 
 
       //create a character array of 16 characters for the time
@@ -186,7 +174,7 @@ void loop() {
       //print the time string over lcd
       lcd.print(dateTime);
 
-      checkEvent(hour(), minute(), day(), month(), year());
+      checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
 
       
     }
@@ -215,7 +203,7 @@ void loop() {
   //print the time string over lcd
   lcd.print(dateTime);
 
-  checkEvent(hour(), minute(), day(), month(), year());
+  checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
 
 }
 
@@ -236,9 +224,9 @@ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
 
 
 
-void checkEvent(int h, int m, int d, int mo, int y){
+void checkEvent(int h, int m, int d){
 
-  if(h == eventHour && m == eventMinute && d == eventDay && mo == eventMonth && y == eventYear){
+  if(h == eventHour && m == eventMinute && d == eventDay){
     digitalWrite(ledPin, HIGH);
   }
   
