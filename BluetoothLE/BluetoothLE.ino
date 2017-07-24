@@ -22,6 +22,9 @@
 
 #define LEAP_YEAR(Y)     ( (Y>0) && !(Y%4) && ( (Y%100) || !(Y%400) ))     // from time-lib
 
+#define NOTE_D1  37
+
+
 
 
 rgb_lcd lcd;
@@ -50,6 +53,8 @@ BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLER
 
 
 const int ledPin = 8; // pin to use for the LED
+int speakerPin = 3;
+
 
 void setup() {
   Serial.begin(9600);
@@ -94,9 +99,12 @@ void setup() {
   // start advertising
   BLE.advertise();
 
+  pinMode(speakerPin, OUTPUT);
   
   //set time to 5:00:00 on March 18th, 2017. Please change to your time / date
   setTime(5, 0, 0, 18, 3, 2017);
+
+
 
 }
 
@@ -143,7 +151,7 @@ void loop() {
           eventDay = event.value()-2;
           days[eventDay] = true;
 
-          Serial.print(days[eventDay]);
+          Serial.println(eventDay);
         }
       }
 
@@ -227,8 +235,11 @@ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
 
 void checkEvent(int h, int m, int d){
 
-  if(h == eventHour && m == eventMinute && days[d]){
+  if(h == eventHour && m == eventMinute && days[d]){    
     digitalWrite(ledPin, HIGH);
+    tone(speakerPin, NOTE_D1, 500);
+    delay(1000);
+
   } 
  
 
@@ -252,3 +263,4 @@ void checkEvent(int h, int m, int d){
    License along with this library; if not, write to the Free Software
    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
+
