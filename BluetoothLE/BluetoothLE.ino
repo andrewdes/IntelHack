@@ -33,6 +33,8 @@ int eventDay;
 int eventMonth;
 int eventYear;
 
+boolean days[7] = {false,false,false,false,false,false,false};
+
 BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Service
 
 // BLE LED Switch Characteristic - custom 128-bit UUID, read and writable by central
@@ -139,10 +141,9 @@ void loop() {
           eventHour = hourCharacteristic.value();
           eventMinute = minuteCharacteristic.value();
           eventDay = event.value()-2;
-          Serial.println(eventDay);
-          Serial.println(eventHour);
-          Serial.println(eventMinute);
-          Serial.println(dayOfWeek(year(), month(), day()));
+          days[eventDay] = true;
+
+          Serial.print(days[eventDay]);
         }
       }
 
@@ -226,10 +227,11 @@ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
 
 void checkEvent(int h, int m, int d){
 
-  if(h == eventHour && m == eventMinute && d == eventDay){
+  if(h == eventHour && m == eventMinute && days[d]){
     digitalWrite(ledPin, HIGH);
-  }
-  
+  } 
+ 
+
 }
 
 
