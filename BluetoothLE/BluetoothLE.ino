@@ -35,6 +35,11 @@ int eventMinute;
 int eventDay;
 int eventMonth;
 int eventYear;
+int buttonState = 0;         // variable for reading the pushbutton status
+boolean alreadyTriggered = false;
+boolean trigger = false;
+int currentMin = -2;
+
 
 boolean days[7] = {false,false,false,false,false,false,false};
 
@@ -53,7 +58,8 @@ BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLER
 
 
 const int ledPin = 8; // pin to use for the LED
-int speakerPin = 3;
+const int speakerPin = 3;
+const int buttonPin = 7;
 
 
 void setup() {
@@ -100,6 +106,8 @@ void setup() {
   BLE.advertise();
 
   pinMode(speakerPin, OUTPUT);
+  pinMode(buttonPin, INPUT);
+
   
   //set time to 5:00:00 on March 18th, 2017. Please change to your time / date
   setTime(5, 0, 0, 18, 3, 2017);
@@ -113,6 +121,7 @@ void loop() {
   BLEDevice central = BLE.central();
 
   float temperature = dht.getTemperature();
+
 
   if(dht.getStatusString()){
     tempCharacteristic.setValue(temperature); 
@@ -150,8 +159,6 @@ void loop() {
           eventMinute = minuteCharacteristic.value();
           eventDay = event.value()-2;
           days[eventDay] = true;
-
-          Serial.println(eventDay);
         }
       }
 
@@ -183,8 +190,21 @@ void loop() {
       //print the time string over lcd
       lcd.print(dateTime);
 
-      checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
+      Serial.println(alreadyTriggered);
 
+      //If alarm isn't already sounded
+      if(!trigger && !alreadyTriggered){
+        checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
+      }else if(trigger){
+        checkButton();
+      }
+
+      Serial.println(currentMin);
+      
+      //If atleast 1 minute has passed, reset alreadyTriggered
+      if((currentMin + 1) == minute()){
+        alreadyTriggered = false;
+      }
       
     }
 
@@ -212,7 +232,18 @@ void loop() {
   //print the time string over lcd
   lcd.print(dateTime);
 
-  checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
+
+  //If alarm isn't already sounded
+  if(!trigger && !alreadyTriggered){
+    checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
+  }else if(trigger){
+    checkButton();
+  }
+
+  //If atleast 1 minute has passed, reset alreadyTriggered
+  if((currentMin + 1) == minute()){
+    alreadyTriggered = false;
+  }
 
 }
 
@@ -233,17 +264,34 @@ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
 
 
 
+
 void checkEvent(int h, int m, int d){
 
   if(h == eventHour && m == eventMinute && days[d]){    
-    digitalWrite(ledPin, HIGH);
-    tone(speakerPin, NOTE_D1, 500);
-    delay(1000);
-
-  } 
- 
+    trigger = true;
+    alreadyTriggered = true;
+    currentMin = m;
+  }  
 
 }
+
+void checkButton(){
+
+    buttonState = digitalRead(buttonPin); //read button state
+
+    //If button is pressed while alarm is going off
+    if (buttonState == HIGH) {
+        noTone(speakerPin );
+        digitalWrite(ledPin, LOW);  
+        trigger = false;      
+    }else{
+        digitalWrite(ledPin, HIGH);
+        tone(speakerPin, NOTE_D1, 500);
+        delay(1000);
+    }
+  
+}
+
 
 
 /*
