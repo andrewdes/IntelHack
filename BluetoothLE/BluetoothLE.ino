@@ -22,51 +22,48 @@
 
 #define LEAP_YEAR(Y)     ( (Y>0) && !(Y%4) && ( (Y%100) || !(Y%400) ))     // from time-lib
 
-#define NOTE_D1  37
-
-
-
+#define NOTE_D1  37 //alarm note
 
 rgb_lcd lcd;
 DHT dht;
 
-int eventHour;
-int eventMinute;
+int eventHour; 
+int eventMinute; 
 int eventDay;
 int eventMonth;
 int eventYear;
+
 int buttonState = 0;         // variable for reading the pushbutton status
 boolean alreadyTriggered = false;
 boolean trigger = false;
 int currentMin = -2;
 
 
-boolean days[7] = {false,false,false,false,false,false,false};
+boolean days[7] = {false,false,false,false,false,false,false}; //Used to track which days the alarm is
 
 BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Service
 
 // BLE LED Switch Characteristic - custom 128-bit UUID, read and writable by central
 BLEUnsignedCharCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LED
-BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //TempSens
+BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //Temperature sensor
 BLEUnsignedCharCharacteristic hourCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Hour
 BLEUnsignedCharCharacteristic minuteCharacteristic("19B10013-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Minute
 BLEUnsignedCharCharacteristic dayCharacteristic("19B10004-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Day
 BLEUnsignedCharCharacteristic monthCharacteristic("19B10014-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Month
 BLEUnsignedCharCharacteristic yearCharacteristic("19B10024-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
-BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); 
+BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Used for tracking what is being written to (setting date, setting time, alarm, etc.)
 
 
 
-const int ledPin = 8; // pin to use for the LED
-const int speakerPin = 3;
-const int buttonPin = 7;
+const int ledPin = 8; //Green led pin
+const int redPin = 4; //red led pin
+const int bluePin = 6; //blue led pin
+const int speakerPin = 3; //buzzer pin
+const int buttonPin = 7; //pushbutton pin
 
 
 void setup() {
   Serial.begin(9600);
-
-  // set LED pin to output mode
-  pinMode(ledPin, OUTPUT);
 
   dht.setup(2);
 
@@ -106,8 +103,10 @@ void setup() {
   BLE.advertise();
 
   pinMode(speakerPin, OUTPUT);
-  pinMode(buttonPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+  pinMode(redPin, OUTPUT);
 
+  pinMode(buttonPin, INPUT);  
   
   //set time to 5:00:00 on March 18th, 2017. Please change to your time / date
   setTime(5, 0, 0, 18, 3, 2017);
@@ -190,20 +189,17 @@ void loop() {
       //print the time string over lcd
       lcd.print(dateTime);
 
-      Serial.println(alreadyTriggered);
-
       //If alarm isn't already sounded
       if(!trigger && !alreadyTriggered){
         checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
       }else if(trigger){
         checkButton();
       }
-
-      Serial.println(currentMin);
       
       //If atleast 1 minute has passed, reset alreadyTriggered
       if((currentMin + 1) == minute()){
         alreadyTriggered = false;
+        currentMin = -2;
       }
       
     }
@@ -243,6 +239,7 @@ void loop() {
   //If atleast 1 minute has passed, reset alreadyTriggered
   if((currentMin + 1) == minute()){
     alreadyTriggered = false;
+    currentMin = -2;
   }
 
 }
@@ -263,17 +260,54 @@ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
 }
 
 
-
-
 void checkEvent(int h, int m, int d){
 
+  int hourLED = eventHour;
+  int minuteLED = eventMinute;
+  int dayLED = eventDay;
+
+
+  //Check if alarm should be triggered
   if(h == eventHour && m == eventMinute && days[d]){    
     trigger = true;
     alreadyTriggered = true;
     currentMin = m;
   }  
 
+
+  //Check if LED should go off (20 mintues before alarm)
+  if((minuteLED-20) < 0){
+
+      int remainder = abs(minuteLED-20);
+  
+      if((hourLED - 1) < 0){
+  
+        if((dayLED - 1) < 0){
+          dayLED = 6;        
+        }else{
+          dayLED -= 1;
+        }
+  
+        hourLED = 23;
+        
+      }else{
+        hourLED -= 1;
+      }
+      
+      minuteLED = 59 - remainder;    
+    
+  }else{
+    minuteLED -= 20;
+  }  
+
+
+  if(h == hourLED && m == minuteLED && d  == dayLED){
+    digitalWrite(redPin, HIGH);
+  }
+
 }
+
+
 
 void checkButton(){
 
@@ -283,6 +317,7 @@ void checkButton(){
     if (buttonState == HIGH) {
         noTone(speakerPin );
         digitalWrite(ledPin, LOW);  
+        digitalWrite(redPin, LOW);
         trigger = false;      
     }else{
         digitalWrite(ledPin, HIGH);
