@@ -36,6 +36,7 @@ int eventYear;
 int buttonState = 0;         // variable for reading the pushbutton status
 boolean alreadyTriggered = false;
 boolean trigger = false;
+boolean light = false;
 int currentMin = -2;
 
 
@@ -54,6 +55,8 @@ BLEUnsignedCharCharacteristic yearCharacteristic("19B10024-E8F2-537E-4F6C-D10476
 BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Used for tracking what is being written to (setting date, setting time, alarm, etc.)
 
 
+const int thresholdvalue=25; //The threshold for which light is detected
+float Rsensor; //Resistance of sensor in K
 
 const int ledPin = 8; //Green led pin
 const int redPin = 4; //red led pin
@@ -311,10 +314,11 @@ void checkEvent(int h, int m, int d){
 
 void checkButton(){
 
+    checkLight();
     buttonState = digitalRead(buttonPin); //read button state
 
     //If button is pressed while alarm is going off
-    if (buttonState == HIGH) {
+    if (buttonState == HIGH && light) {
         noTone(speakerPin );
         digitalWrite(ledPin, LOW);  
         digitalWrite(redPin, LOW);
@@ -324,6 +328,22 @@ void checkButton(){
         tone(speakerPin, NOTE_D1, 500);
         delay(1000);
     }
+  
+}
+
+void checkLight(){
+
+  int sensorValue = analogRead(0);   
+  Rsensor=(float)(1023-sensorValue)*10/sensorValue;
+  
+  if(Rsensor>thresholdvalue)
+  {
+    light = false;
+  }
+  else
+  {
+    light = true;
+  }
   
 }
 
