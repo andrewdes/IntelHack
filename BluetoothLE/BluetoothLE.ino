@@ -294,7 +294,7 @@ void checkEvent(int h, int m, int d){
         hourLED -= 1;
       }
       
-      minuteLED = 59 - remainder;    
+      minuteLED = 60 - remainder;    
     
   }else{
     minuteLED -= 20;
