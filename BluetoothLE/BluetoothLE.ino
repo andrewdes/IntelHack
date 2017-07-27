@@ -27,11 +27,11 @@
 rgb_lcd lcd;
 DHT dht;
 
-int eventHour; 
-int eventMinute; 
-int eventDay;
-int eventMonth;
-int eventYear;
+int eventHour = -2; 
+int eventMinute = -2; 
+int eventDay = -2;
+int eventMonth = -2;
+int eventYear = -2;
 
 int buttonState = 0;         // variable for reading the pushbutton status
 boolean alreadyTriggered = false;
@@ -44,6 +44,9 @@ int nmEndH = -1;
 int nmEndM = -1;
 boolean nm = false;
 boolean changeLCD = true;
+int pirState = LOW; 
+boolean retrigger = false;
+boolean alreadyRetriggered = false;
 
 int r = 255;
 int g = 255; 
@@ -73,6 +76,7 @@ const int redPin = 4; //red led pin
 const int bluePin = 6; //blue led pin
 const int speakerPin = 3; //buzzer pin
 const int buttonPin = 7; //pushbutton pin
+const int motionPin = 5;
 
 
 void setup() {
@@ -120,6 +124,7 @@ void setup() {
   pinMode(redPin, OUTPUT);
 
   pinMode(buttonPin, INPUT);  
+  pinMode(motionPin, INPUT);
   
   //set time to 5:00:00 on March 18th, 2017. Please change to your time / date
   setTime(5, 0, 0, 18, 3, 2017);
@@ -211,6 +216,12 @@ void loop() {
         changeLCD = false;
       }
 
+      reTriggerAlarm(minute());
+
+      if(retrigger){
+        trigger = true;
+      }    
+
 
       //create a character array of 16 characters for the time
       char clockTime[16];
@@ -243,6 +254,7 @@ void loop() {
       if((currentMin + 1) == minute()){
         alreadyTriggered = false;
         currentMin = -2;
+        alreadyRetriggered = false;
       }
       
     }
@@ -283,6 +295,7 @@ void loop() {
   if((currentMin + 1) == minute()){
     alreadyTriggered = false;
     currentMin = -2;
+    alreadyRetriggered = false;
   }
 
 
@@ -295,6 +308,10 @@ void loop() {
     lcd.setRGB(r,g,b);
     changeLCD = false;
   }
+
+  reTriggerAlarm(minute());
+
+
 
 }
 
@@ -410,6 +427,20 @@ void checkNightMode(int h, int m){
   }
   
 }
+
+void reTriggerAlarm(int m){
+
+  pirState = digitalRead(motionPin);  // read input value
+
+  if(!alreadyRetriggered){
+    if((eventMinute + 1) == m && pirState == LOW){
+      trigger = true; 
+      alreadyRetriggered = true;
+    }  
+  }
+  
+}
+
 
 
 
