@@ -38,6 +38,16 @@ boolean alreadyTriggered = false;
 boolean trigger = false;
 boolean light = false;
 int currentMin = -2;
+int nmStartH = -1;
+int nmStartM = - 1;
+int nmEndH = -1;
+int nmEndM = -1;
+boolean nm = false;
+boolean changeLCD = true;
+
+int r = 255;
+int g = 255; 
+int b = 255;
 
 
 boolean days[7] = {false,false,false,false,false,false,false}; //Used to track which days the alarm is
@@ -156,7 +166,15 @@ void loop() {
 
         if(!event.value()){
           setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, day(), month(), year());
-        }else{
+        }else if(event.value() == 10){
+          nmStartH = hourCharacteristic.value();
+          nmStartM = minuteCharacteristic.value(); 
+          changeLCD = true;        
+        }else if(event.value() == 11){
+          nmEndH = hourCharacteristic.value();
+          nmEndM = minuteCharacteristic.value();         
+        }
+        else{        
           eventHour = hourCharacteristic.value();
           eventMinute = minuteCharacteristic.value();
           eventDay = event.value()-2;
@@ -171,8 +189,27 @@ void loop() {
 
       //Update LCD background
       if(tempCharacteristic.written()){
-        lcd.setRGB(dayCharacteristic.value(),monthCharacteristic.value(),tempCharacteristic.value());
+        
+        r = dayCharacteristic.value();
+        g = monthCharacteristic.value();
+        b = tempCharacteristic.value();
+        
+        lcd.setRGB(r,g,b);
+
+        changeLCD = true;
       }    
+
+
+      checkNightMode(hour(), minute());
+
+
+      if(nm && changeLCD){
+        lcd.setRGB(0,0,0);
+        changeLCD = false;
+      }else if(changeLCD){
+        lcd.setRGB(r,g,b);
+        changeLCD = false;
+      }
 
 
       //create a character array of 16 characters for the time
@@ -198,7 +235,7 @@ void loop() {
       //If alarm isn't already sounded
       if(!trigger && !alreadyTriggered){
         checkEvent(hour(), minute(), dayOfWeek(year(), month(), day()));
-      }else if(trigger){
+        }else if(trigger){
         checkButton();
       }
       
@@ -246,6 +283,17 @@ void loop() {
   if((currentMin + 1) == minute()){
     alreadyTriggered = false;
     currentMin = -2;
+  }
+
+
+  checkNightMode(hour(),minute());
+
+  if(nm && changeLCD){
+    lcd.setRGB(0,0,0);
+    changeLCD = false;
+  }else if(changeLCD){
+    lcd.setRGB(r,g,b);
+    changeLCD = false;
   }
 
 }
@@ -346,6 +394,19 @@ void checkLight(){
   else
   {
     light = true;
+  }
+  
+}
+
+void checkNightMode(int h, int m){
+
+
+  if(h == nmStartH && m == nmStartM){
+    nm = true;
+    changeLCD = true;
+  }else if(h == nmEndH && m == nmEndM){
+    nm = false;
+    changeLCD = true;
   }
   
 }
