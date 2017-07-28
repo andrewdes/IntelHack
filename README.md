@@ -41,3 +41,6 @@ Step 4) To use the Android app, download the zip folder in the repo, extract it 
     - Fully controllable from an Android application (adjust time and date, alarm time, LCD backlight colour, etc.)
 
   
+<b>Devpost:</b> https://devpost.com/software/alarm-buddy-3052as
+<b>Android App:</b> https://github.com/andrewdes/IntelHackApp
+ 
