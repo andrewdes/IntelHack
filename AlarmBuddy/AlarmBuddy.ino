@@ -4,12 +4,11 @@
  */
 
 /*
- * Sketch: led.ino
- *
- * Description:
- *   This is a Peripheral sketch that works with a connected Central.
- *   It allows the Central to write a value and set/reset the led
- *   accordingly.
+ * Author: Andrew Deschenes
+ * Description: This sketch controls Alarm Buddy. Using bluetooth LE the alarm clock can be written too from an Android application. Certain values may also be 
+ * read (for example the temperature). Alarm buddy functions as an alarm clock with several added features. Traffic is taken into account to know what time to wake
+ * you up (calculations done on app). The lights must be on in order to turn off the alarm. If no motion is detected one minute after the alarm was triggered,
+ * the alarm will retrigger. The LCD backlight display can be controlled from the app as well as the time, date and alarm time. 
  */
 
 #include <CurieBLE.h>
@@ -149,16 +148,16 @@ void loop() {
 
     // while the central is still connected to peripheral:
     while (central.connected()) {
-      // if the remote device wrote to the characteristic,
-      // use the value to control the LED:
+      
+      //Turn LED on and off
       if (switchCharacteristic.written()) {
-        if (switchCharacteristic.value()) {   // any value other than 0
+        if (switchCharacteristic.value()) {   
           Serial.println("LED on");
-          digitalWrite(ledPin, HIGH);         // will turn the LED on
+          digitalWrite(ledPin, HIGH);         
 
-        } else {                              // a 0 value
+        } else {                             
           Serial.println(F("LED off"));
-          digitalWrite(ledPin, LOW);          // will turn the LED off
+          digitalWrite(ledPin, LOW);          
         }
       }
 
@@ -166,17 +165,18 @@ void loop() {
       //minute characteristic is the last to be written to from app
       if (minuteCharacteristic.written()){
 
+        //Set the time
         if(!event.value()){
           setTime(hourCharacteristic.value(), minuteCharacteristic.value(), 0, day(), month(), year());
-        }else if(event.value() == 10){
+        }else if(event.value() == 10){ //Set the night mode start time
           nmStartH = hourCharacteristic.value();
           nmStartM = minuteCharacteristic.value(); 
           changeLCD = true;        
-        }else if(event.value() == 11){
+        }else if(event.value() == 11){ //set the night mode end time
           nmEndH = hourCharacteristic.value();
           nmEndM = minuteCharacteristic.value();         
         }
-        else{        
+        else{ //set the alarm time and days       
           eventHour = hourCharacteristic.value();
           eventMinute = minuteCharacteristic.value();
           eventDay = event.value()-2;
@@ -204,7 +204,7 @@ void loop() {
 
       checkNightMode(hour(), minute());
 
-
+      //If it should be in nightmode, set LCD to off else, set it to the default colour or colour chosen from app
       if(nm && changeLCD){
         lcd.setRGB(0,0,0);
         changeLCD = false;
@@ -215,6 +215,7 @@ void loop() {
 
       reTriggerAlarm(minute());
 
+      //If alarm should be retriggered (no motion)
       if(retrigger){
         trigger = true;
       }    
@@ -299,6 +300,7 @@ void loop() {
 
   checkNightMode(hour(),minute());
 
+  //If it should be in nightmode, set LCD to off else, set it to the default colour or colour chosen from app
   if(nm && changeLCD){
     lcd.setRGB(0,0,0);
     changeLCD = false;
@@ -309,13 +311,19 @@ void loop() {
 
   reTriggerAlarm(minute());
 
+  //If alarm should be retriggered (no motion)
+  if(retrigger){
+    trigger = true;
+  }    
+
 
 
 }
 
-//Returns the day of the week based on the current day, month and year
-int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
-{
+/**
+ * Returns the current day of the week (Saturday = 0, Friday = 6) based on the year, month and day
+ */
+ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day){
   uint16_t months[] = {
     0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365         };   // days until 1st of month
 
@@ -329,6 +337,9 @@ int dayOfWeek(uint16_t year, uint8_t month, uint8_t day)
 }
 
 
+/**
+ * Check if the alarm should be going off
+ */
 void checkEvent(int h, int m, int d){
 
   int hourLED = eventHour;
@@ -377,7 +388,9 @@ void checkEvent(int h, int m, int d){
 }
 
 
-
+/**
+ * Check if the button to shut the alarm off is being pressed
+ */
 void checkButton(){
 
     checkLight();
@@ -397,6 +410,9 @@ void checkButton(){
   
 }
 
+/**
+ * Update the current temperature so the app can read the latest temperature
+ */
 void checkTemperature(){
 
    float temperature = dht.getTemperature();
@@ -409,7 +425,9 @@ void checkTemperature(){
 }
 
 
-
+/**
+ * Check if the lights are on
+ */
 void checkLight(){
 
   int sensorValue = analogRead(0);   
@@ -426,6 +444,9 @@ void checkLight(){
   
 }
 
+/**
+ * Check if the LCD should be put into night or taken out of night mode
+ */
 void checkNightMode(int h, int m){
 
 
@@ -439,9 +460,12 @@ void checkNightMode(int h, int m){
   
 }
 
+/**
+ * Checks if the alarm should be retriggered after it has already been shut off
+ */
 void reTriggerAlarm(int m){
 
-  pirState = digitalRead(motionPin);  // read input value
+  pirState = digitalRead(motionPin);  // read motion sensor
 
   if(!alreadyRetriggered){
     if((eventMinute + 1) == m && pirState == LOW){
