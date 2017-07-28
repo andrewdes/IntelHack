@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2016 Intel Corporation.  All rights reserved.
  * See the bottom of this file for the license terms.
@@ -467,12 +468,12 @@ void reTriggerAlarm(int m){
 
   pirState = digitalRead(motionPin);  // read motion sensor
 
+  Serial.println(pirState);
+
   if(!alreadyRetriggered){
     if((eventMinute + 1) == m && pirState == LOW){
       trigger = true; 
       alreadyRetriggered = true;
-    }else{
-      alreadyRetriggered = true;  
     }
   }
   
