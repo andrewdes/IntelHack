@@ -59,13 +59,14 @@ BLEService ledService("19B10000-E8F2-537E-4F6C-D104768A1214"); // BLE LED Servic
 
 // BLE LED Switch Characteristic - custom 128-bit UUID, read and writable by central
 BLEUnsignedCharCharacteristic switchCharacteristic("19B10001-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //LED
-BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Temperature sensor
+BLEUnsignedCharCharacteristic tempCharacteristic("19B10002-E8F2-537E-4F6C-D104768A1214", BLERead); //Temperature sensor
 BLEUnsignedCharCharacteristic hourCharacteristic("19B10003-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Hour
 BLEUnsignedCharCharacteristic minuteCharacteristic("19B10013-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Minute
 BLEUnsignedCharCharacteristic dayCharacteristic("19B10004-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Day
 BLEUnsignedCharCharacteristic monthCharacteristic("19B10014-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Month
 BLEUnsignedCharCharacteristic yearCharacteristic("19B10024-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Year
 BLEUnsignedCharCharacteristic event("19B10005-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Used for tracking what is being written to (setting date, setting time, alarm, etc.)
+BLEUnsignedCharCharacteristic blueCharacteristic("19B10006-E8F2-537E-4F6C-D104768A1214", BLERead | BLEWrite); //Used for the color blue (RGB, R & G are recycled from other characteristics)
 
 
 const int thresholdvalue=25; //The threshold for which light is detected
@@ -101,6 +102,7 @@ void setup() {
   ledService.addCharacteristic(monthCharacteristic);
   ledService.addCharacteristic(yearCharacteristic);
   ledService.addCharacteristic(event);
+  ledService.addCharacteristic(blueCharacteristic);
   
 
   // add service
@@ -115,6 +117,7 @@ void setup() {
   monthCharacteristic.setValue(0);
   yearCharacteristic.setValue(0);
   event.setValue(0);
+  blueCharacteristic.setValue(0);
 
   // start advertising
   BLE.advertise();
@@ -137,12 +140,6 @@ void loop() {
   // listen for BLE peripherals to connect:
   BLEDevice central = BLE.central();
 
-  float temperature = dht.getTemperature();
-
-
-  if(dht.getStatusString()){
-    tempCharacteristic.setValue(temperature); 
-  }
 
   // if a central is connected to peripheral:
   if (central) {
@@ -193,11 +190,11 @@ void loop() {
       }
 
       //Update LCD background
-      if(tempCharacteristic.written()){
+      if(blueCharacteristic.written()){
         
         r = dayCharacteristic.value();
         g = monthCharacteristic.value();
-        b = tempCharacteristic.value();
+        b = blueCharacteristic.value();
         
         lcd.setRGB(r,g,b);
 
@@ -222,6 +219,7 @@ void loop() {
         trigger = true;
       }    
 
+      checkTemperature();
 
       //create a character array of 16 characters for the time
       char clockTime[16];
@@ -291,8 +289,8 @@ void loop() {
     checkButton();
   }
 
-  //If atleast 1 minute has passed, reset alreadyTriggered
-  if((currentMin + 1) == minute()){
+  //If atleast 2 minutes has passed
+  if((currentMin + 2) == minute()){
     alreadyTriggered = false;
     currentMin = -2;
     alreadyRetriggered = false;
@@ -399,6 +397,19 @@ void checkButton(){
   
 }
 
+void checkTemperature(){
+
+   float temperature = dht.getTemperature();
+
+  if(dht.getStatusString()){
+    tempCharacteristic.setValue(temperature); 
+  }
+
+  
+}
+
+
+
 void checkLight(){
 
   int sensorValue = analogRead(0);   
@@ -436,7 +447,9 @@ void reTriggerAlarm(int m){
     if((eventMinute + 1) == m && pirState == LOW){
       trigger = true; 
       alreadyRetriggered = true;
-    }  
+    }else{
+      alreadyRetriggered = true;  
+    }
   }
   
 }
