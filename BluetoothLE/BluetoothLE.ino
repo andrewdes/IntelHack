@@ -90,7 +90,7 @@ void setup() {
   lcd.begin(16,2);
 
   // set advertised local name and service UUID:
-  BLE.setLocalName("Alarm Clock");
+  BLE.setLocalName("Alarm Buddy");
   BLE.setAdvertisedService(ledService);
 
   // add the characteristic to the service
